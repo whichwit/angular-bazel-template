@@ -1,0 +1,126 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@npm_angular_bazel//:index.bzl", "ng_module")
+load("@build_bazel_rules_nodejs//:defs.bzl", "rollup_bundle", "history_server")
+load("@build_bazel_rules_nodejs//internal/web_package:web_package.bzl", "web_package")
+load("@npm_bazel_typescript//:index.bzl", "ts_devserver", "ts_library")
+load("@io_bazel_rules_sass//:defs.bzl", "multi_sass_binary", "sass_binary")
+
+sass_binary(
+  name = "global_stylesheet",
+  src = glob(["styles.css", "styles.scss"])[0],
+  output_name = "global_stylesheet.css",
+)
+
+multi_sass_binary(
+    name = "styles",
+    srcs = glob(
+      include = ["**/*.scss"],
+      exclude = ["styles.scss"],
+    ),
+)
+
+ng_module(
+    name = "expected",
+    srcs = glob(
+        include = ["**/*.ts"],
+        exclude = [
+            "**/*.spec.ts",
+            "main.ts",
+            "test.ts",
+            "initialize_testbed.ts",
+        ],
+    ),
+    tsconfig = "//projects:tsconfig.json",
+    assets = glob([
+      "**/*.css",
+      "**/*.html",
+    ]) + ([":styles"] if len(glob(["**/*.scss"])) else []),
+    deps = [
+        "@npm//@angular/core",
+        "@npm//@angular/common",
+        "@npm//@angular/platform-browser",
+        "@npm//@angular/router",
+        "@npm//@ngxs/store",
+        "@npm//@ngxs/logger-plugin",
+        "@npm//@ngxs/form-plugin",
+        "@npm//@ngxs-labs/emitter",
+        "@npm//@types",
+        "@npm//rxjs",
+        "//packages/core",
+        "//packages/store",
+    ],
+)
+
+rollup_bundle(
+    name = "bundle",
+    entry_point = ":main.prod.ts",
+    deps = [
+        "@npm//@angular/core",
+        "@npm//@angular/common",
+        "@npm//@angular/router",
+        "@npm//@ngxs/store",
+        "@npm//@ngxs/logger-plugin",
+        "@npm//@ngxs/form-plugin",
+        "@npm//@ngxs-labs/emitter",
+        "@npm//rxjs",
+        "@npm//date-fns",
+        ":expected",
+    ],
+)
+
+web_package(
+    name = "prodapp",
+    assets = [
+        # do not sort
+        "@npm//:node_modules/zone.js/dist/zone.min.js",
+        ":bundle.min.js",
+        ":global_stylesheet",
+    ],
+    data = [
+        "favicon.ico",
+    ],
+    index_html = "index.html",
+)
+
+history_server(
+    name = "prodserver",
+    data = [":prodapp"],
+    templated_args = ["projects/expected/prodapp"],
+)
+
+filegroup(
+    name = "rxjs_umd_modules",
+    srcs = [
+        # do not sort
+        "@npm//:node_modules/rxjs/bundles/rxjs.umd.js",
+        ":rxjs_shims.js",
+    ],
+)
+
+ts_devserver(
+    name = "devserver",
+    port = 4200,
+    entry_module = "project/projects/expected/main.dev",
+    serving_path = "/bundle.min.js",
+    scripts = [
+        "@npm//:node_modules/tslib/tslib.js",
+        "@npm//date-fns:date-fns.umd.js",
+        ":rxjs_umd_modules",
+    ],
+    static_files = [
+        "@npm//:node_modules/zone.js/dist/zone.js",
+        ":global_stylesheet",
+    ],
+    data = [
+        "favicon.ico",
+    ],
+    index_html = "index.html",
+    deps = [
+        ":expected",
+        "@npm//date-fns:date-fns__umd",
+        "@npm//@angular/router",
+        "@npm//@angular/core",
+        "@npm//rxjs",
+        ],
+)

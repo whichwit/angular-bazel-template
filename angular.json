@@ -1,0 +1,90 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "expected": {
+      "projectType": "application",
+      "root": "",
+      "sourceRoot": "projects/expected",
+      "prefix": "app",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "architect": {
+        "build": {
+          "builder": "@angular/bazel:build",
+          "options": {
+            "targetLabel": "//projects/expected:prodapp",
+            "bazelCommand": "build"
+          },
+          "configurations": {
+            "production": {
+              "targetLabel": "//projects/expected:prodapp"
+            }
+          }
+        },
+        "serve": {
+          "builder": "@angular/bazel:build",
+          "options": {
+            "targetLabel": "//projects/expected:devserver",
+            "bazelCommand": "run",
+            "watch": true
+          },
+          "configurations": {
+            "production": {
+              "targetLabel": "//projects/expected:prodserver"
+            }
+          }
+        },
+        "extract-i18n": {
+          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "options": {
+            "browserTarget": "expected:build"
+          }
+        },
+        "test": {
+          "builder": "@angular/bazel:build",
+          "options": {
+            "bazelCommand": "test",
+            "targetLabel": "//projects/expected:test"
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "tsconfig.app.json",
+              "tsconfig.spec.json",
+              "e2e/tsconfig.json"
+            ],
+            "exclude": [
+              "**/node_modules/**"
+            ]
+          }
+        },
+        "e2e": {
+          "builder": "@angular/bazel:build",
+          "options": {
+            "bazelCommand": "test",
+            "targetLabel": "//e2e:devserver_test"
+          },
+          "configurations": {
+            "production": {
+              "targetLabel": "//e2e:prodserver_test"
+            }
+          }
+        }
+      }
+    }
+  },
+  "cli": {
+    "warnings": {
+      "typescriptMismatch": false,
+      "versionMismatch": false
+    }
+  },
+  "defaultProject": "expected"
+}
