@@ -29,7 +29,7 @@
         "serve": {
           "builder": "@angular/bazel:build",
           "options": {
-            "targetLabel": "//projects/expected:devserver",
+            "targetLabel": "//projects/expected:prodserver",
             "bazelCommand": "run",
             "watch": true
           },
